@@ -14,14 +14,28 @@ contract AssetToken is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
         Ownable(initialOwner)
     {}
 
+    struct Owner {
+        address add;
+        uint256 amount;
+    }
+    struct NFT{
+        uint256 totalShares;
+        Owner[] owners;
+    }
+    mapping(uint256 => NFT) public nft;
+    uint256 public _totalShares;
+
     function _baseURI() internal pure override returns (string memory) {
         return "https://localhost:3000/";
     }
 
-    function safeMint(address to, string memory uri) public onlyOwner {
+    function safeMint(address to, string memory uri, uint256 totalShares) public onlyOwner {
         uint256 tokenId = _nextTokenId++;
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
+        _totalShares = totalShares;
+        nft[tokenId].owners.push(Owner(to,totalShares));
+        nft[tokenId].totalShares = totalShares;
     }
 
     // The following functions are overrides required by Solidity.
@@ -57,5 +71,56 @@ contract AssetToken is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
+    }
+
+
+    function buyShares(uint256 _tokenId, uint256 _amount, address from) external payable {
+        require(_amount > 0, "Amount must be greater than 0");
+        require(_amount <= _totalShares, "Not enough shares available");
+
+        nft[_tokenId].owners.push(Owner(msg.sender, _amount));
+
+        // Transfer ETH to contract owner (you may customize this logic)
+        //payable(address(this)).transfer(msg.value);
+
+        // Transfer NFT to the buyer
+        //transferFrom(msg.sender, address(this), _tokenId);
+
+        sellShares(_tokenId, _amount, from);
+    }
+
+    function sellShares(uint256 _tokenId, uint256 _amount, address from) public {
+        uint256 i = getElementIndex(from,_tokenId);
+        require( i < 100, "You don't own these shares");
+        require( _amount <= nft[_tokenId].totalShares, "Not enough shares to sell");
+
+        nft[_tokenId].owners[i].amount -= _amount;
+
+        // Transfer NFT back to the seller
+        //transferFrom(from, from, _tokenId);
+
+        // Transfer ETH to the seller (you may customize this logic)
+        //payable(msg.sender).transfer(_amount * (address(this).balance / _totalShares));
+    }
+
+    function getElementIndex(address _element, uint256 _tokenId) public view returns (uint256) {
+        for (uint256 i = 0; i < nft[_tokenId].owners.length; i++) {
+            if (nft[_tokenId].owners[i].add == _element) {
+                return i; // Element found, return its index
+            }
+        }
+        revert("Element not found"); // If element not found, revert
+    }
+
+    function getOwnershipDetails(uint256 _tokenId) external view returns (address[] memory owners, uint256[] memory amounts) {
+        owners = new address[](nft[_tokenId].owners.length);
+        amounts = new uint256[](nft[_tokenId].owners.length);
+
+        for (uint256 i = 0; i < nft[_tokenId].owners.length; i++) {
+            owners[i] = nft[_tokenId].owners[i].add;
+            amounts[i] = nft[_tokenId].owners[i].amount;
+        }
+
+        return (owners, amounts);
     }
 }

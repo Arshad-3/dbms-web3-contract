@@ -26,4 +26,5 @@ To work with the smart contracts, you will need the following tools installed on
 - [Node.js](https://nodejs.org/)
 - [Metamask](https://metamask.io/)
 
-[Frontend Repo](https://github.com/Arshad-3/dbms-miniproject-frontend)
+[Frontend Repo](https://github.com/vigneshsnaik/dbms-miniproject-frontend)
+[Webhook](https://github.com/vigneshsnaik/dbms-moralis-integration)
